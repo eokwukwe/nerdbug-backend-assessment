@@ -1,6 +1,11 @@
 import { object, string, TypeOf, z } from 'zod';
 import User from '../database/models/user';
 
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+}
+
 export const baseUserSchema = object({
   body: object({
     first_name: string({
@@ -62,5 +67,11 @@ export const updateUserSchema = baseUserSchema
     }
   });
 
+export const loginSchema = object({
+  body: baseUserSchema.shape.body.pick({ email: true }).merge(passwordSchema),
+});
+
+export type BaseUser = z.infer<typeof baseUserSchema>['body'];
+export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UpdateUserInput = z.infer<typeof updateUserSchema>['body'];
 export type CreateUserInput = TypeOf<typeof createUserSchema>['body'];

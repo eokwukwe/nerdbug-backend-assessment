@@ -14,7 +14,7 @@
     "build": "tsc -p .",
     "start": "node build/src/index.js",
     "pretest": "cross-env NODE_ENV=test npx sequelize-cli db:migrate",
-    "test": "cross-env NODE_ENV=test jest",
+    "test": "cross-env NODE_ENV=test jest --runInBand",
     "db:seed": "npx sequelize-cli db:seed:all",
     "db:seed:undo": "npx sequelize-cli db:seed:undo:all",
     "db:migrate": "npx sequelize-cli db:migrate",

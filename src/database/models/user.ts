@@ -1,15 +1,18 @@
 import {
-  BeforeCreate,
-  Column,
-  CreatedAt,
-  DataType,
-  IsEmail,
-  Length,
   Model,
   Table,
+  Length,
+  Column,
+  HasMany,
+  IsEmail,
+  DataType,
   UpdatedAt,
+  CreatedAt,
+  BeforeCreate,
 } from 'sequelize-typescript';
 
+import Session from './session';
+import { UserRole } from '../../schemas';
 import { createHash } from '../../utils/bcrypt';
 
 @Table({
@@ -55,10 +58,10 @@ class User extends Model {
   password: string;
 
   @Column({
-    type: DataType.ENUM('user', 'admin'),
-    defaultValue: 'user',
+    type: DataType.ENUM(UserRole.USER, UserRole.ADMIN),
+    allowNull: false,
   })
-  role: string;
+  role: UserRole;
 
   @CreatedAt
   created_at: Date;
@@ -70,6 +73,9 @@ class User extends Model {
   static hashPassword(instance: User) {
     instance.password = createHash(instance.password);
   }
+
+  @HasMany(() => Session)
+  sessions: Session[];
 
   toJSON() {
     // get the object of this instance

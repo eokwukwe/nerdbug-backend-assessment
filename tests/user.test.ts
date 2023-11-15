@@ -2,9 +2,10 @@ import { Server } from 'http';
 import request from 'supertest';
 
 import { createApp } from '../src/app';
-import { UserService } from '../src/services';
+import { AuthService, SessionService, UserService } from '../src/services';
 import { CreateUserInput } from '../src/schemas';
 import sequelize from '../src/database/connection';
+import { createTestSession } from './helpers';
 
 const usersFixture: CreateUserInput[] = [
   {
@@ -32,6 +33,7 @@ const usersFixture: CreateUserInput[] = [
 
 describe('User Resource Test', () => {
   let app: Server;
+  // let accessToken: string;
 
   const url = '/api/users';
 
@@ -40,7 +42,9 @@ describe('User Resource Test', () => {
   });
 
   beforeAll(async () => {
-    app = createApp(3333);
+    app = createApp(3033);
+    // const { token } = await createTestSession(usersFixture[0]);
+    // accessToken = token;
   });
 
   afterAll(async () => {
@@ -50,19 +54,24 @@ describe('User Resource Test', () => {
 
   describe('Get User Record Endpoints', () => {
     it('should get all user records', async () => {
+      const { token } = await createTestSession('user');
       await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).get(url);
+      const response = await request(app)
+        .get(url)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toHaveLength(usersFixture.length);
+      expect(response.body.data).toHaveLength(usersFixture.length + 1);
     });
 
     it('should get a user by id', async () => {
+      const { token } = await createTestSession('user');
       let records = await UserService.model.bulkCreate(usersFixture);
-      records = records.map((r) => r.toJSON());
 
-      const response = await request(app).get(`${url}/${records[0].id}`);
+      const response = await request(app)
+        .get(`${url}/${records[0].id}`)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.id).toEqual(records[0].id);
@@ -70,10 +79,13 @@ describe('User Resource Test', () => {
     });
 
     it('should return 404 if user record does not exist', async () => {
+      const { token } = await createTestSession('user');
       const id = usersFixture.length + 10;
       await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).get(`${url}/${id}`);
+      const response = await request(app)
+        .get(`${url}/${id}`)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toEqual(
@@ -138,11 +150,13 @@ describe('User Resource Test', () => {
 
   describe('Update User Record Endpoint', () => {
     it('should validates field types', async () => {
+      const { token } = await createTestSession('user');
       let records = await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).put(`${url}/${records[0].id}`).send({
-        email: 'email.com',
-      });
+      const response = await request(app)
+        .put(`${url}/${records[0].id}`)
+        .send({ email: 'email.com' })
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(422);
       expect(response.body.errors).toMatchObject({
@@ -151,11 +165,13 @@ describe('User Resource Test', () => {
     });
 
     it('should validates duplicate email', async () => {
+      const { token } = await createTestSession('user');
       let records = await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).put(`${url}/${records[0].id}`).send({
-        email: records[1].email,
-      });
+      const response = await request(app)
+        .put(`${url}/${records[0].id}`)
+        .send({ email: records[1].email })
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(422);
       expect(response.body.errors).toMatchObject({
@@ -164,12 +180,16 @@ describe('User Resource Test', () => {
     });
 
     it('should update a user record by id', async () => {
+      const { token } = await createTestSession('user');
       let records = await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).put(`${url}/${records[0].id}`).send({
-        first_name: 'Johnson',
-        last_name: 'Doeman',
-      });
+      const response = await request(app)
+        .put(`${url}/${records[0].id}`)
+        .send({
+          first_name: 'Johnson',
+          last_name: 'Doeman',
+        })
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.first_name).toEqual('Johnson');
@@ -177,10 +197,13 @@ describe('User Resource Test', () => {
     });
 
     it('should return 404 if user record does not exist', async () => {
+      const { token } = await createTestSession('user');
       const id = usersFixture.length + 10;
       await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).put(`${url}/${id}`);
+      const response = await request(app)
+        .put(`${url}/${id}`)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toEqual(
@@ -191,19 +214,25 @@ describe('User Resource Test', () => {
 
   describe('Delete User Record Endpoint', () => {
     it('should delete a user record by id', async () => {
+      const { token } = await createTestSession('user');
       let records = await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).delete(`${url}/${records[0].id}`);
+      const response = await request(app)
+        .delete(`${url}/${records[0].id}`)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
       expect(response.body.message).toEqual('User deleted successfully');
     });
 
     it('should return 404 if user record does not exist', async () => {
+      const { token } = await createTestSession('user');
       const id = usersFixture.length + 10;
       await UserService.model.bulkCreate(usersFixture);
 
-      const response = await request(app).delete(`${url}/${id}`);
+      const response = await request(app)
+        .delete(`${url}/${id}`)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toEqual(

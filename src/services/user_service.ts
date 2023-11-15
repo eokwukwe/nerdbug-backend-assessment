@@ -15,6 +15,12 @@ export class UserService {
     });
   }
 
+  static async getOne(options: { [key: string]: any }) {
+    return await this.model.findOne({
+      where: options,
+    });
+  }
+
   static async getById(id: number) {
     return await this.model.findByPk(id, {
       attributes: { exclude: ['password'] },

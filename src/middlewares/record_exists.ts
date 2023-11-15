@@ -1,6 +1,6 @@
+import { WhereOptions } from 'sequelize';
 import { Model, ModelCtor } from 'sequelize-typescript';
 import { NextFunction, Request, Response } from 'express';
-import { WhereOptions } from 'sequelize';
 
 export default function recordExists<T extends Model>(model: ModelCtor<T>) {
   return async (req: Request, res: Response, next: NextFunction) => {
