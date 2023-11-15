@@ -16,10 +16,11 @@
     "pretest": "cross-env NODE_ENV=test npx sequelize-cli db:migrate",
     "test": "cross-env NODE_ENV=test jest",
     "db:seed": "npx sequelize-cli db:seed:all",
+    "db:seed:undo": "npx sequelize-cli db:seed:undo:all",
     "db:migrate": "npx sequelize-cli db:migrate",
     "db:rollback": "npx sequelize-cli db:migrate:undo",
     "generate:seed": "npx sequelize-cli seed:generate --name",
-    "generate:migration": "npx sequelize-cli migration:create"
+    "generate:migration": "npx sequelize-cli migration:create --name"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -38,6 +39,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.3.0",
     "@japa/api-client": "^2.0.0-1",
     "@japa/expect": "^3.0.0-1",
     "@japa/expect-type": "^2.0.0-1",

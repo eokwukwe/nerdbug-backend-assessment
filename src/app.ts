@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import express, { Response, Request, NextFunction } from 'express';
 
 import './database/connection';
+
+import apiRoutes from './routes';
 import HttpError from './utils/http_error';
 
 export function createApp(port: number) {
@@ -21,9 +23,11 @@ export function createApp(port: number) {
   app.get('/api', (_req: Request, res: Response) => {
     res.status(200).json({
       status: true,
-      message: 'Welcome to NERDBUG assessment API',
+      message: 'Welcome to NERDBUG backend assessment API',
     });
   });
+
+  app.use('/api', apiRoutes);
 
   // UNHANDLED ROUTE
   app.all('*', (req: Request, res: Response, next: NextFunction) => {
@@ -59,7 +63,9 @@ export function createApp(port: number) {
   );
 
   const server = app.listen(port, () => {
-    console.log(`Server started on port: http://localhost:${port}`);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`Server started on port: http://localhost:${port}`);
+    }
   });
 
   return server;
