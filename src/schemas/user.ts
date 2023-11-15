@@ -1,7 +1,7 @@
 import { object, string, TypeOf, z } from 'zod';
 import User from '../database/models/user';
 
-export const createUserSchema = object({
+export const baseUserSchema = object({
   body: object({
     first_name: string({
       required_error: 'First name is required',
@@ -14,26 +14,53 @@ export const createUserSchema = object({
     email: string({
       required_error: 'Email is required',
     }).email('Invalid email address'),
-    password: string({
-      required_error: 'Password is required',
-      invalid_type_error: 'Password must be a string',
-    }).min(8, 'Password must be at least 8 characters'),
     role: z.enum(['user', 'admin'], {
       errorMap: () => ({
         message: `Invalid role. Available roles [user, admin].`,
       }),
     }),
   }),
-}).superRefine(async (data, ctx) => {
-  const count = await User.count({ where: { email: data.body.email } });
-
-  if (count) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['body', 'email'],
-      message: 'Email already exists',
-    });
-  }
 });
 
+const passwordSchema = object({
+  password: string({
+    required_error: 'Password is required',
+    invalid_type_error: 'Password must be a string',
+  }).min(8, 'Password must be at least 8 characters'),
+});
+
+export const createUserSchema = baseUserSchema
+  .extend({
+    body: baseUserSchema.shape.body.extend(passwordSchema.shape),
+  })
+  .superRefine(async (data, ctx) => {
+    const count = await User.count({ where: { email: data.body.email } });
+
+    if (count) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['body', 'email'],
+        message: 'Email already exists',
+      });
+    }
+  });
+
+export const updateUserSchema = baseUserSchema
+  .deepPartial()
+  .superRefine(async (data, ctx) => {
+    let count: number | undefined;
+    if (data.body && data.body.email) {
+      count = await User.count({ where: { email: data.body.email } });
+
+      if (count) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['body', 'email'],
+          message: 'Email already exists',
+        });
+      }
+    }
+  });
+
+export type UpdateUserInput = z.infer<typeof updateUserSchema>['body'];
 export type CreateUserInput = TypeOf<typeof createUserSchema>['body'];

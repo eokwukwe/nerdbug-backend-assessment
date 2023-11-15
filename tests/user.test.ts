@@ -33,20 +33,56 @@ const usersFixture: CreateUserInput[] = [
 describe('User Resource Test', () => {
   let app: Server;
 
+  const url = '/api/users';
+
+  beforeEach(async () => {
+    await sequelize.sync({ force: true });
+  });
+
   beforeAll(async () => {
-    await sequelize.sync();
     app = createApp(3333);
   });
 
   afterAll(async () => {
     app.close();
-    await sequelize.drop();
     await sequelize.close();
   });
 
-  describe('Create User Endpoint', () => {
-    const url = '/api/users';
+  describe('Get User Record Endpoints', () => {
+    it('should get all user records', async () => {
+      await UserService.model.bulkCreate(usersFixture);
 
+      const response = await request(app).get(url);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(usersFixture.length);
+    });
+
+    it('should get a user by id', async () => {
+      let records = await UserService.model.bulkCreate(usersFixture);
+      records = records.map((r) => r.toJSON());
+
+      const response = await request(app).get(`${url}/${records[0].id}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.id).toEqual(records[0].id);
+      expect(response.body.data.role).toEqual(records[0].role);
+    });
+
+    it('should return 404 if user record does not exist', async () => {
+      const id = usersFixture.length + 10;
+      await UserService.model.bulkCreate(usersFixture);
+
+      const response = await request(app).get(`${url}/${id}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toEqual(
+        `The requested record with id "${id}" does not exist`
+      );
+    });
+  });
+
+  describe('Create User Record Endpoint', () => {
     it('should validate required fields', async () => {
       const response = await request(app).post(url).send({});
 
@@ -91,12 +127,88 @@ describe('User Resource Test', () => {
     });
 
     it('should create a new user record with valid input', async () => {
-      const response = await request(app).post(url).send(usersFixture[1]);
+      const response = await request(app).post(url).send(usersFixture[0]);
 
-      const { password, ...othersFields } = usersFixture[1];
+      const { password, ...othersFields } = usersFixture[0];
 
       expect(response.status).toBe(201);
       expect(response.body.data).toMatchObject(othersFields);
+    });
+  });
+
+  describe('Update User Record Endpoint', () => {
+    it('should validates field types', async () => {
+      let records = await UserService.model.bulkCreate(usersFixture);
+
+      const response = await request(app).put(`${url}/${records[0].id}`).send({
+        email: 'email.com',
+      });
+
+      expect(response.status).toBe(422);
+      expect(response.body.errors).toMatchObject({
+        email: 'Invalid email address',
+      });
+    });
+
+    it('should validates duplicate email', async () => {
+      let records = await UserService.model.bulkCreate(usersFixture);
+
+      const response = await request(app).put(`${url}/${records[0].id}`).send({
+        email: records[1].email,
+      });
+
+      expect(response.status).toBe(422);
+      expect(response.body.errors).toMatchObject({
+        email: 'Email already exists',
+      });
+    });
+
+    it('should update a user record by id', async () => {
+      let records = await UserService.model.bulkCreate(usersFixture);
+
+      const response = await request(app).put(`${url}/${records[0].id}`).send({
+        first_name: 'Johnson',
+        last_name: 'Doeman',
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.first_name).toEqual('Johnson');
+      expect(response.body.data.last_name).toEqual('Doeman');
+    });
+
+    it('should return 404 if user record does not exist', async () => {
+      const id = usersFixture.length + 10;
+      await UserService.model.bulkCreate(usersFixture);
+
+      const response = await request(app).put(`${url}/${id}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toEqual(
+        `The requested record with id "${id}" does not exist`
+      );
+    });
+  });
+
+  describe('Delete User Record Endpoint', () => {
+    it('should delete a user record by id', async () => {
+      let records = await UserService.model.bulkCreate(usersFixture);
+
+      const response = await request(app).delete(`${url}/${records[0].id}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toEqual('User deleted successfully');
+    });
+
+    it('should return 404 if user record does not exist', async () => {
+      const id = usersFixture.length + 10;
+      await UserService.model.bulkCreate(usersFixture);
+
+      const response = await request(app).delete(`${url}/${id}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toEqual(
+        `The requested record with id "${id}" does not exist`
+      );
     });
   });
 });
