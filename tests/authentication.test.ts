@@ -4,17 +4,8 @@ import request from 'supertest';
 import sequelize from '../src/database/connection';
 
 import { createApp } from '../src/app';
-import { CreateUserInput } from '../src/schemas';
-import { createTestSession } from './helpers';
+import { createTestSession, testUsers } from './helpers';
 import { SessionService, UserService } from '../src/services';
-
-const usersFixture: CreateUserInput = {
-  first_name: 'John',
-  last_name: 'Doe',
-  email: 'John@mail.com',
-  password: 'password',
-  role: 'admin',
-};
 
 describe('Authentication Resource Test', () => {
   let app: Server;
@@ -56,7 +47,7 @@ describe('Authentication Resource Test', () => {
     });
 
     it('should return 401 error for wrong password', async () => {
-      const user = usersFixture;
+      const user = testUsers[0];
       await UserService.create(user);
 
       const response = await request(app).post(`${url}/login`).send({
@@ -69,7 +60,7 @@ describe('Authentication Resource Test', () => {
     });
 
     it('should authenticate a user with valid credential and create a session', async () => {
-      const user = usersFixture;
+      const user = testUsers[0];
       const newUser = await UserService.model.create(user);
 
       const response = await request(app).post(`${url}/login`).send({

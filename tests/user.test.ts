@@ -2,39 +2,12 @@ import { Server } from 'http';
 import request from 'supertest';
 
 import { createApp } from '../src/app';
-import { AuthService, SessionService, UserService } from '../src/services';
-import { CreateUserInput } from '../src/schemas';
+import { UserService } from '../src/services';
 import sequelize from '../src/database/connection';
-import { createTestSession } from './helpers';
-
-const usersFixture: CreateUserInput[] = [
-  {
-    first_name: 'John',
-    last_name: 'Doe',
-    email: 'John@mail.com',
-    password: 'password',
-    role: 'admin',
-  },
-  {
-    first_name: 'James',
-    last_name: ' Doe',
-    email: 'James@mail.com',
-    password: 'password',
-    role: 'user',
-  },
-  {
-    first_name: 'Jane',
-    last_name: 'Doe',
-    email: 'Jane@mail.com',
-    password: 'password',
-    role: 'user',
-  },
-];
+import { createTestSession, testUsers } from './helpers';
 
 describe('User Resource Test', () => {
   let app: Server;
-  // let accessToken: string;
-
   const url = '/api/users';
 
   beforeEach(async () => {
@@ -43,8 +16,6 @@ describe('User Resource Test', () => {
 
   beforeAll(async () => {
     app = createApp(3033);
-    // const { token } = await createTestSession(usersFixture[0]);
-    // accessToken = token;
   });
 
   afterAll(async () => {
@@ -53,21 +24,33 @@ describe('User Resource Test', () => {
   });
 
   describe('Get User Record Endpoints', () => {
-    it('should get all user records', async () => {
+    it('should verify that only admin can fetch all users', async () => {
       const { token } = await createTestSession('user');
-      await UserService.model.bulkCreate(usersFixture);
+      await UserService.model.bulkCreate(testUsers);
+
+      const response = await request(app)
+        .get(url)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toEqual('Unauthorized operation');
+    });
+
+    it('should get all user records', async () => {
+      const { token } = await createTestSession('admin');
+      await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .get(url)
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toHaveLength(usersFixture.length + 1);
+      expect(response.body.data).toHaveLength(testUsers.length + 1);
     });
 
     it('should get a user by id', async () => {
       const { token } = await createTestSession('user');
-      let records = await UserService.model.bulkCreate(usersFixture);
+      let records = await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .get(`${url}/${records[0].id}`)
@@ -80,8 +63,8 @@ describe('User Resource Test', () => {
 
     it('should return 404 if user record does not exist', async () => {
       const { token } = await createTestSession('user');
-      const id = usersFixture.length + 10;
-      await UserService.model.bulkCreate(usersFixture);
+      const id = testUsers.length + 10;
+      await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .get(`${url}/${id}`)
@@ -128,9 +111,9 @@ describe('User Resource Test', () => {
     });
 
     it('should validate duplicate record', async () => {
-      await UserService.create(usersFixture[0]);
+      await UserService.create(testUsers[0]);
 
-      const response = await request(app).post(url).send(usersFixture[0]);
+      const response = await request(app).post(url).send(testUsers[0]);
 
       expect(response.status).toBe(422);
       expect(response.body.errors).toMatchObject({
@@ -139,9 +122,9 @@ describe('User Resource Test', () => {
     });
 
     it('should create a new user record with valid input', async () => {
-      const response = await request(app).post(url).send(usersFixture[0]);
+      const response = await request(app).post(url).send(testUsers[0]);
 
-      const { password, ...othersFields } = usersFixture[0];
+      const { password, ...othersFields } = testUsers[0];
 
       expect(response.status).toBe(201);
       expect(response.body.data).toMatchObject(othersFields);
@@ -151,7 +134,7 @@ describe('User Resource Test', () => {
   describe('Update User Record Endpoint', () => {
     it('should validates field types', async () => {
       const { token } = await createTestSession('user');
-      let records = await UserService.model.bulkCreate(usersFixture);
+      let records = await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .put(`${url}/${records[0].id}`)
@@ -166,7 +149,7 @@ describe('User Resource Test', () => {
 
     it('should validates duplicate email', async () => {
       const { token } = await createTestSession('user');
-      let records = await UserService.model.bulkCreate(usersFixture);
+      let records = await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .put(`${url}/${records[0].id}`)
@@ -181,7 +164,7 @@ describe('User Resource Test', () => {
 
     it('should update a user record by id', async () => {
       const { token } = await createTestSession('user');
-      let records = await UserService.model.bulkCreate(usersFixture);
+      let records = await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .put(`${url}/${records[0].id}`)
@@ -198,8 +181,8 @@ describe('User Resource Test', () => {
 
     it('should return 404 if user record does not exist', async () => {
       const { token } = await createTestSession('user');
-      const id = usersFixture.length + 10;
-      await UserService.model.bulkCreate(usersFixture);
+      const id = testUsers.length + 10;
+      await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .put(`${url}/${id}`)
@@ -213,9 +196,21 @@ describe('User Resource Test', () => {
   });
 
   describe('Delete User Record Endpoint', () => {
-    it('should delete a user record by id', async () => {
+    it('should verify that only admin can delete a user', async () => {
       const { token } = await createTestSession('user');
-      let records = await UserService.model.bulkCreate(usersFixture);
+      let records = await UserService.model.bulkCreate(testUsers);
+
+      const response = await request(app)
+        .delete(`${url}/${records[0].id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.message).toEqual('Unauthorized operation');
+    });
+
+    it('should delete a user record by id', async () => {
+      const { token } = await createTestSession('admin');
+      let records = await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .delete(`${url}/${records[0].id}`)
@@ -226,9 +221,9 @@ describe('User Resource Test', () => {
     });
 
     it('should return 404 if user record does not exist', async () => {
-      const { token } = await createTestSession('user');
-      const id = usersFixture.length + 10;
-      await UserService.model.bulkCreate(usersFixture);
+      const { token } = await createTestSession('admin');
+      const id = testUsers.length + 10;
+      await UserService.model.bulkCreate(testUsers);
 
       const response = await request(app)
         .delete(`${url}/${id}`)

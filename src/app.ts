@@ -20,13 +20,6 @@ export function createApp(port: number) {
 
   app.use(cors());
 
-  app.get('/api', (_req: Request, res: Response) => {
-    res.status(200).json({
-      status: true,
-      message: 'Welcome to NERDBUG backend assessment API',
-    });
-  });
-
   app.use('/api', apiRoutes);
 
   // UNHANDLED ROUTE

@@ -1,6 +1,7 @@
+import { faker } from '@faker-js/faker';
+
 import { CreateUserInput, UserRole } from '../../src/schemas';
 import { AuthService, SessionService, UserService } from '../../src/services';
-import { faker } from '@faker-js/faker';
 
 type Roles = `${UserRole}`;
 
@@ -18,3 +19,13 @@ export const createTestSession = async (role: Roles) => {
 
   return { token, session };
 };
+
+export const testUsers: CreateUserInput[] = Array.from({ length: 10 }).map(
+  (_) => ({
+    first_name: faker.person.firstName(),
+    last_name: faker.person.lastName(),
+    email: faker.internet.email(),
+    password: 'password',
+    role: 'user',
+  })
+);

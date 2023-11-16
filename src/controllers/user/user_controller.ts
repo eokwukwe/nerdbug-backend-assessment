@@ -40,11 +40,13 @@ export class UserController {
 
   static async updateById(req: Request, res: Response, next: NextFunction) {
     try {
-      await UserService.updateById(parseInt(req.params.id), req.body);
+      const userId = req.user!.id;
+
+      await UserService.updateById(userId, req.body);
 
       return res.status(200).json({
         status: true,
-        data: await UserService.getById(parseInt(req.params.id)),
+        data: await UserService.getById(userId),
       });
     } catch (error) {
       next(error);
