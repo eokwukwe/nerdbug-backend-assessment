@@ -6,6 +6,7 @@ import './database/connection';
 
 import apiRoutes from './routes';
 import HttpError from './utils/http_error';
+import { errorHandler } from './utils/error_handler';
 
 export function createApp(port: number) {
   const app = express();
@@ -26,32 +27,7 @@ export function createApp(port: number) {
   });
 
   // GLOBAL ERROR HANDLER
-  app.use(
-    (error: HttpError, _req: Request, res: Response, next: NextFunction) => {
-      const isProduction = process.env.NODE_ENV === 'production';
-
-      error.status = error.status || false;
-      error.statusCode = error.statusCode || 500;
-
-      if (isProduction && error.statusCode === 500) {
-        res.status(error.statusCode).json({
-          status: error.status,
-          message: 'Something went wrong.Please contact support',
-        });
-      } else if (error.statusCode === 500) {
-        res.status(error.statusCode).json({
-          status: error.status,
-          message: error.message,
-          error,
-        });
-      } else {
-        res.status(error.statusCode).json({
-          status: error.status,
-          message: error.message,
-        });
-      }
-    }
-  );
+  app.use(errorHandler);
 
   const server = app.listen(port, () => {
     if (process.env.NODE_ENV !== 'test') {

@@ -5,7 +5,7 @@ import { AuthService } from '../../services';
 
 export class AuthController {
   static async login(
-    req: Request<{}, {}, LoginInput>,
+    req: Request,
     res: Response,
     next: NextFunction
   ) {

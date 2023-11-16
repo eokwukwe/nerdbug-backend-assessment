@@ -1,9 +1,10 @@
 import { Server } from 'http';
 import request from 'supertest';
 
+import sequelize from '../src/database/connection';
+
 import { createApp } from '../src/app';
 import { UserService } from '../src/services';
-import sequelize from '../src/database/connection';
 import { createTestSession, testUsers } from './helpers';
 
 describe('User Resource Test', () => {

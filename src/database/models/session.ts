@@ -4,12 +4,9 @@ import {
   Column,
   DataType,
   BelongsTo,
-  UpdatedAt,
   ForeignKey,
-  BeforeCreate,
 } from 'sequelize-typescript';
 
-import config from 'config';
 import User from './user';
 
 @Table({

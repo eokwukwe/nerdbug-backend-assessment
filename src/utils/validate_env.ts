@@ -1,6 +1,6 @@
 import { cleanEnv, port, str } from 'envalid';
 
-const validateEnv = () => {
+function validateEnv() {
   cleanEnv(process.env, {
     PORT: port(),
     DATABASE_URL: str(),
@@ -8,6 +8,6 @@ const validateEnv = () => {
     JWT_ACCESS_TOKEN_PUBLIC_KEY: str(),
     JWT_ACCESS_TOKEN_PRIVATE_KEY: str(),
   });
-};
+}
 
 export default validateEnv;
